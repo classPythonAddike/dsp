@@ -14,26 +14,26 @@
  */
 
 module NOT(input wire A, output wire B);
-    assign B = ~A;
+    assign #22 B = ~A;
 endmodule
 
 module ADDER(input wire [7:0] A, input wire [7:0] B, input wire SUB, output wire [7:0] C);
-    assign C = SUB ? B - A : A + B;
+    assign #16.5 C = SUB ? B - A : A + B;
 endmodule
 
 module CMP(input wire [7:0] A, input wire [7:0] B, output wire GT, output wire LT, output wire EQ);
-    assign GT = A > B;
-    assign LT = A < B;
-    assign EQ = A == B;
+    assign #17.5 GT = A > B;
+    assign #17.5 LT = A < B;
+    assign #17.5 EQ = A == B;
 endmodule
 
 module CLOCK(output wire CLK);
     reg clk;
     initial
-        clk = 0;
+        clk = 1;
 
     always
-        #10 clk = ~clk;
+        #28.5 clk = ~clk;
 
     assign CLK = clk;
 endmodule
@@ -50,7 +50,7 @@ module REGISTER(
         else if (!WRITE_EN_LOW)
             data <= IN;
 
-    assign OUT = data;
+    assign #5.2 OUT = data;
 endmodule
 
 module LSHIFT(input wire [7:0] IN, output wire [7:0] OUT);
@@ -70,16 +70,15 @@ module LUT(
     always @ (posedge CLK) begin
         if (RESET) begin
             if (!halt) begin
-                angle_data = angle_array[pointer];
                 pointer += 1;
+                angle_data = angle_array[pointer];
                 if (pointer == 0)
                     halt = 1;
-            end else
-                halt = 1;
+            end
         end else begin
-            halt = 0;
             pointer = 0;
-            angle_data = 0;
+            angle_data = angle_array[pointer];
+            halt = 0;
         end
     end
 
@@ -94,8 +93,8 @@ module LUT(
         angle_array[7] = 1;
     end
 
-    assign ANGLE = angle_data;
-    assign HALT = halt;
+    assign #32 ANGLE = angle_data;
+    assign #24 HALT = halt;
 endmodule
 
 module CORDIC(input wire [7:0] IN_ANGLE, input wire RESET_PULSE, output wire[7:0] THETA_ADDER_IN);

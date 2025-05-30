@@ -19,7 +19,10 @@ module CORDIC_TB();
         $dumpvars(0, CORDIC_TB);
         // $monitor("time=%0t Angle=%d LUT Angle=%d, clk=%d", $time, OUTPUT_ANGLE, LUT_ANGLE, CLK);
 
-        #25 RESET_PULSE = 1;
-        #200 $finish;
+        #140 RESET_PULSE = 1;
+        #600 RESET_PULSE = 0;
+        #50 INPUT_ANGLE = 48;
+        #100 RESET_PULSE = 1;
+        #600 $finish;
     end
 endmodule
