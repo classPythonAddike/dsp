@@ -2,12 +2,11 @@
 
 module CORDIC_TB();
     reg [7:0] INPUT_ANGLE;
-    wire [7:0] OUTPUT_ANGLE;
     wire [7:0] LUT_ANGLE;
     reg RESET_PULSE;
     wire CLK;
 
-    CORDIC cordic_test(INPUT_ANGLE, RESET_PULSE, OUTPUT_ANGLE);
+    CORDIC cordic_test(INPUT_ANGLE, RESET_PULSE);
 
     initial begin
         RESET_PULSE = 0;
@@ -19,10 +18,10 @@ module CORDIC_TB();
         $dumpvars(0, CORDIC_TB);
         // $monitor("time=%0t Angle=%d LUT Angle=%d, clk=%d", $time, OUTPUT_ANGLE, LUT_ANGLE, CLK);
 
-        #140 RESET_PULSE = 1;
-        #600 RESET_PULSE = 0;
-        #50 INPUT_ANGLE = 48;
+        #150 RESET_PULSE = 1;
+        #550 RESET_PULSE = 0;
+        #50 INPUT_ANGLE = 94;
         #100 RESET_PULSE = 1;
-        #600 $finish;
+        #550 $finish;
     end
 endmodule

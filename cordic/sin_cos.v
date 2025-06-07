@@ -33,7 +33,7 @@ module CLOCK(output wire CLK);
         clk = 1;
 
     always
-        #28.5 clk = ~clk;
+        #30 clk = ~clk;
 
     assign CLK = clk;
 endmodule
@@ -53,8 +53,23 @@ module REGISTER(
     assign #5.2 OUT = data;
 endmodule
 
+module REGISTER_UNITY(
+    input wire [7:0] IN, input wire WRITE_EN_LOW, input wire RESET, input wire CLK,
+    output wire [7:0] OUT
+);
+    reg [7:0] data;
+    
+    always @ (posedge CLK)
+        if (!RESET)
+            data = 1;
+        else if (!WRITE_EN_LOW)
+            data <= IN;
+
+    assign #5.2 OUT = data;
+endmodule
+
 module LSHIFT(input wire [7:0] IN, output wire [7:0] OUT);
-    assign OUT = IN << 1;
+    assign OUT = IN > 0 ? IN << 1 : -((-IN) << 1);
 endmodule
 
 module LUT(
@@ -97,10 +112,11 @@ module LUT(
     assign #24 HALT = halt;
 endmodule
 
-module CORDIC(input wire [7:0] IN_ANGLE, input wire RESET_PULSE, output wire[7:0] THETA_ADDER_IN);
+module CORDIC(input wire [7:0] IN_ANGLE, input wire RESET_PULSE);
     wire CLK;
     CLOCK clock(CLK);
 
+    wire [7:0] THETA_ADDER_IN;
     wire [7:0] THETA_ADDER_OUT;
     wire TGT_LT, TGT_GT, TGT_EQ;
 
@@ -111,4 +127,20 @@ module CORDIC(input wire [7:0] IN_ANGLE, input wire RESET_PULSE, output wire[7:0
     REGISTER theta(THETA_ADDER_OUT, HALT, RESET_PULSE, CLK, THETA_ADDER_IN);
     CMP comparator(IN_ANGLE, THETA_ADDER_IN, TGT_GT, TGT_LT, TGT_EQ);
     ADDER theta_adder(LUT_ANGLE, THETA_ADDER_IN, TGT_LT, THETA_ADDER_OUT);
+
+    wire [7:0] COS_THETA_ADDER_IN;
+    wire [7:0] SIN_THETA_ADDER_IN;
+    wire [7:0] COS_THETA_ADDER_OUT;
+    wire [7:0] SIN_THETA_ADDER_OUT;
+
+    wire [7:0] COS_THETA_LSHIFT;
+    wire [7:0] SIN_THETA_LSHIFT;
+
+    REGISTER_UNITY cos_theta(COS_THETA_ADDER_OUT, HALT, RESET_PULSE, CLK, COS_THETA_ADDER_IN);
+    LSHIFT cos_lshift(COS_THETA_ADDER_IN, COS_THETA_LSHIFT);
+    ADDER cos_theta_adder(SIN_THETA_LSHIFT, COS_THETA_ADDER_IN, TGT_GT, COS_THETA_ADDER_OUT);
+
+    REGISTER sin_theta(SIN_THETA_ADDER_OUT, HALT, RESET_PULSE, CLK, SIN_THETA_ADDER_IN);
+    LSHIFT SIN_lshift(SIN_THETA_ADDER_IN, SIN_THETA_LSHIFT);
+    ADDER SIN_theta_adder(COS_THETA_LSHIFT, SIN_THETA_ADDER_IN, TGT_LT, SIN_THETA_ADDER_OUT);
 endmodule
