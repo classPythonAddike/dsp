@@ -69,7 +69,7 @@ module REGISTER_UNITY(
 endmodule
 
 module RSHIFT_N(input wire [7:0] IN, input wire [2:0] N, output wire [7:0] OUT);
-    assign OUT = IN >> N;
+    assign #26 OUT = IN >> N;
 endmodule
 
 module LUT(
