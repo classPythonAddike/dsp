@@ -2,11 +2,13 @@
 
 module CORDIC_TB();
     reg [7:0] INPUT_ANGLE;
-    wire [7:0] LUT_ANGLE;
+    wire [7:0] COS_THETA;
+    wire [7:0] SIN_THETA;
+    
+    wire READY;
     reg RESET_PULSE;
-    wire CLK;
 
-    CORDIC cordic_test(INPUT_ANGLE, RESET_PULSE);
+    CORDIC cordic_test(INPUT_ANGLE, RESET_PULSE, COS_THETA, SIN_THETA, READY);
 
     initial begin
         RESET_PULSE = 0;

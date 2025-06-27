@@ -21,9 +21,9 @@ module ADDER(input wire [7:0] A, input wire [7:0] B, input wire SUB, output wire
     assign #16.5 C = SUB ? B - A : A + B;
 endmodule
 
-module CMP(input wire [7:0] A, input wire [7:0] B, output wire GT, output wire LT, output wire EQ);
+module CMP(input wire [7:0] A, input wire [7:0] B, output wire GT, output wire LET, output wire EQ);
     assign #17.5 GT = A > B;
-    assign #17.5 LT = A < B;
+    assign #17.5 LET = A <= B;
     assign #17.5 EQ = A == B;
 endmodule
 
@@ -61,20 +61,21 @@ module REGISTER_UNITY(
     
     always @ (posedge CLK)
         if (!RESET)
-            data = 1;
+            data = 8'b10011011;
         else if (!WRITE_EN_LOW)
             data <= IN;
 
     assign #5.2 OUT = data;
 endmodule
 
-module LSHIFT(input wire [7:0] IN, output wire [7:0] OUT);
-    assign OUT = IN > 0 ? IN << 1 : -((-IN) << 1);
+module RSHIFT_N(input wire [7:0] IN, input wire [2:0] N, output wire [7:0] OUT);
+    assign OUT = IN >> N;
 endmodule
 
 module LUT(
     input wire CLK, input wire RESET,
-    output wire [7:0] ANGLE, output wire HALT
+    output wire [7:0] ANGLE, output wire HALT,
+    output wire [2:0] SHIFT_COUNT
 );
     reg [7:0] angle_data;
     reg [2:0] pointer;
@@ -110,37 +111,40 @@ module LUT(
 
     assign #32 ANGLE = angle_data;
     assign #24 HALT = halt;
+    assign #10 SHIFT_COUNT = pointer;
 endmodule
 
-module CORDIC(input wire [7:0] IN_ANGLE, input wire RESET_PULSE);
+module CORDIC(
+    input wire [7:0] IN_ANGLE, input wire RESET_PULSE,
+    output wire [7:0] COS_THETA, output wire [7:0] SIN_THETA,
+    output wire HALT
+);
     wire CLK;
     CLOCK clock(CLK);
 
     wire [7:0] THETA_ADDER_IN;
     wire [7:0] THETA_ADDER_OUT;
-    wire TGT_LT, TGT_GT, TGT_EQ;
+    wire TGT_LET, TGT_GT, TGT_EQ;
 
     wire [7:0] LUT_ANGLE;
-    wire HALT;
-    LUT lut(CLK, RESET_PULSE, LUT_ANGLE, HALT);
+    wire [2:0] SHIFT_COUNT;
+    LUT lut(CLK, RESET_PULSE, LUT_ANGLE, HALT, SHIFT_COUNT);
     
     REGISTER theta(THETA_ADDER_OUT, HALT, RESET_PULSE, CLK, THETA_ADDER_IN);
-    CMP comparator(IN_ANGLE, THETA_ADDER_IN, TGT_GT, TGT_LT, TGT_EQ);
-    ADDER theta_adder(LUT_ANGLE, THETA_ADDER_IN, TGT_LT, THETA_ADDER_OUT);
+    CMP comparator(IN_ANGLE, THETA_ADDER_IN, TGT_GT, TGT_LET, TGT_EQ);
+    ADDER theta_adder(LUT_ANGLE, THETA_ADDER_IN, TGT_LET, THETA_ADDER_OUT);
 
-    wire [7:0] COS_THETA_ADDER_IN;
-    wire [7:0] SIN_THETA_ADDER_IN;
     wire [7:0] COS_THETA_ADDER_OUT;
     wire [7:0] SIN_THETA_ADDER_OUT;
 
-    wire [7:0] COS_THETA_LSHIFT;
-    wire [7:0] SIN_THETA_LSHIFT;
+    wire [7:0] COS_THETA_RSHIFT;
+    wire [7:0] SIN_THETA_RSHIFT;
 
-    REGISTER_UNITY cos_theta(COS_THETA_ADDER_OUT, HALT, RESET_PULSE, CLK, COS_THETA_ADDER_IN);
-    LSHIFT cos_lshift(COS_THETA_ADDER_IN, COS_THETA_LSHIFT);
-    ADDER cos_theta_adder(SIN_THETA_LSHIFT, COS_THETA_ADDER_IN, TGT_GT, COS_THETA_ADDER_OUT);
+    REGISTER_UNITY cos_theta(COS_THETA_ADDER_OUT, HALT, RESET_PULSE, CLK, COS_THETA);
+    RSHIFT_N cos_rshift(COS_THETA, SHIFT_COUNT, COS_THETA_RSHIFT);
+    ADDER cos_theta_adder(SIN_THETA_RSHIFT, COS_THETA, TGT_GT, COS_THETA_ADDER_OUT);
 
-    REGISTER sin_theta(SIN_THETA_ADDER_OUT, HALT, RESET_PULSE, CLK, SIN_THETA_ADDER_IN);
-    LSHIFT SIN_lshift(SIN_THETA_ADDER_IN, SIN_THETA_LSHIFT);
-    ADDER SIN_theta_adder(COS_THETA_LSHIFT, SIN_THETA_ADDER_IN, TGT_LT, SIN_THETA_ADDER_OUT);
+    REGISTER sin_theta(SIN_THETA_ADDER_OUT, HALT, RESET_PULSE, CLK, SIN_THETA);
+    RSHIFT_N SIN_rshift(SIN_THETA, SHIFT_COUNT, SIN_THETA_RSHIFT);
+    ADDER SIN_theta_adder(COS_THETA_RSHIFT, SIN_THETA, TGT_LET, SIN_THETA_ADDER_OUT);
 endmodule
